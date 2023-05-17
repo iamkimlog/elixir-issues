@@ -6,9 +6,23 @@ defmodule Issues.CLI do
   """
 
   def run(argv) do
-    parse_args(argv)
+    argv
+    |> parse_args
+    |> process
   end
 
+  def process(:help) do
+    IO.puts """
+    usage: issues <user> <project> [ count | #{@default_count} ]
+    """
+    System.halt(0)
+  end
+
+  def process({ user, project, _count }) do
+    Issues.GithubIssues.fetch(user, project)
+  end
+
+  @spec parse_args([binary]) :: :help | {binary, binary, integer}
   @doc """
   argv 는 -h 또는 --help (이 경우 :help를 반환) 이거나,
   깃허브 사용자 이름, 프로젝트 이름, (선택적으로) 가져올 이슈 개수여야 한다.
@@ -16,17 +30,21 @@ defmodule Issues.CLI do
   '{사용자명, 프로젝트명, 이슈 개수}' 또는 :help 를 반환한다
   """
   def parse_args(argv) do
-    parse = OptionParser.parse(argv, switches: [ help: :boolean ], aliases: [ h: :help ])
-    case parse do
-      { [ help: true ], _, _ }
-        -> :help
-      { _, [ user, project, count ], _}
-        -> { user, project, String.to_integer(count) }
-      { _, [ user, project, ], _ }
-        -> { user, project, @default_count }
-      _ -> :help
-    end
+    OptionParser.parse(argv, switches: [ help: :boolean ],
+                                     aliases: [ h: :help ])
+    |> elem(1)
+    |> args_to_internal_representation()
   end
 
+  def args_to_internal_representation([user, project, count]) do
+    { user, project, String.to_integer(count) }
+  end
 
+  def args_to_internal_representation([user, project]) do
+    { user, project, @default_count }
+  end
+
+  def args_to_internal_representation(_) do
+    :help
+  end
 end
