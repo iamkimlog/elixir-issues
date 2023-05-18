@@ -4,6 +4,7 @@ defmodule Issues.CLI do
   명령줄 파싱을 수행한 뒤, 각종 함수를 호출해
   깃허브 프로젝트의 최근 _n_개 이슈를 표 형식으로 만들어 출력한다.
   """
+  import Issues.TableFormatter, only: [ print_table_for_columns: 2 ]
 
   def run(argv) do
     argv
@@ -23,6 +24,7 @@ defmodule Issues.CLI do
     |> decode_response()
     |> sort_into_descending_order()
     |> last(count)
+    |> print_table_for_columns(["number", "created_at", "title"])
   end
 
   def last(list, count) do
